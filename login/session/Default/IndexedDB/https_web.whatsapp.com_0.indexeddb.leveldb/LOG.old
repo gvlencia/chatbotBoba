@@ -1,0 +1,25 @@
+2024/12/09-14:47:02.389 13503 Reusing MANIFEST /Users/gaizkavalencia/Documents/wwebjs-bot/login/session/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2024/12/09-14:47:02.389 13503 Recovering log #250
+2024/12/09-14:47:02.436 13503 Reusing old log /Users/gaizkavalencia/Documents/wwebjs-bot/login/session/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000250.log 
+2024/12/09-14:47:05.121 17303 Level-0 table #255: started
+2024/12/09-14:47:05.135 17303 Level-0 table #255: 762267 bytes OK
+2024/12/09-14:47:05.142 17303 Delete type=0 #250
+2024/12/09-14:47:05.142 17303 Manual compaction at level-0 from '\x00O\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00P\x00\x00\x00' @ 0 : 0; will stop at (end)
+2024/12/09-14:47:05.205 1e303 Compacting 1@1 + 1@2 files
+2024/12/09-14:47:05.256 1e303 Generated table #256@1: 76256 keys, 2241465 bytes
+2024/12/09-14:47:05.263 1e303 Generated table #257@1: 6129 keys, 117872 bytes
+2024/12/09-14:47:05.263 1e303 Compacted 1@1 + 1@2 files => 2359337 bytes
+2024/12/09-14:47:05.267 1e303 compacted to: files[ 0 0 2 0 0 0 0 ]
+2024/12/09-14:47:05.267 1e303 Delete type=2 #255
+2024/12/09-14:47:05.267 1e303 Delete type=2 #252
+2024/12/09-17:56:25.912 2241f Level-0 table #259: started
+2024/12/09-17:56:25.938 2241f Level-0 table #259: 1234929 bytes OK
+2024/12/09-17:56:25.947 2241f Delete type=0 #254
+2024/12/09-17:59:13.707 2241f Compacting 1@1 + 2@2 files
+2024/12/09-17:59:13.788 2241f Generated table #260@1: 78156 keys, 2242810 bytes
+2024/12/09-17:59:13.797 2241f Generated table #261@1: 9396 keys, 229768 bytes
+2024/12/09-17:59:13.797 2241f Compacted 1@1 + 2@2 files => 2472578 bytes
+2024/12/09-17:59:13.803 2241f compacted to: files[ 0 0 2 0 0 0 0 ]
+2024/12/09-17:59:13.803 2241f Delete type=2 #259
+2024/12/09-17:59:13.803 2241f Delete type=2 #256
+2024/12/09-17:59:13.803 2241f Delete type=2 #257

@@ -1,0 +1,24 @@
+2024/12/09-14:47:01.907 a003 Reusing MANIFEST /Users/gaizkavalencia/Documents/wwebjs-bot/login/session/Default/Local Storage/leveldb/MANIFEST-000001
+2024/12/09-14:47:01.908 a003 Recovering log #52
+2024/12/09-14:47:01.908 a003 Reusing old log /Users/gaizkavalencia/Documents/wwebjs-bot/login/session/Default/Local Storage/leveldb/000052.log 
+2024/12/09-14:48:03.399 a003 Level-0 table #56: started
+2024/12/09-14:48:03.405 a003 Level-0 table #56: 14909 bytes OK
+2024/12/09-14:48:03.413 a003 Delete type=0 #52
+2024/12/09-14:48:03.417 13503 Compacting 4@0 + 1@1 files
+2024/12/09-14:48:03.421 13503 Generated table #57@0: 124 keys, 5435 bytes
+2024/12/09-14:48:03.421 13503 Compacted 4@0 + 1@1 files => 5435 bytes
+2024/12/09-14:48:03.425 13503 compacted to: files[ 0 1 1 0 0 0 0 ]
+2024/12/09-14:48:03.426 13503 Delete type=2 #48
+2024/12/09-14:48:03.426 13503 Delete type=2 #56
+2024/12/09-14:48:03.426 13503 Delete type=2 #50
+2024/12/09-14:48:03.426 13503 Delete type=2 #46
+2024/12/09-14:48:03.426 13503 Delete type=2 #53
+2024/12/09-16:08:58.572 1bf0b Level-0 table #59: started
+2024/12/09-16:08:58.579 1bf0b Level-0 table #59: 15692 bytes OK
+2024/12/09-16:08:58.587 1bf0b Delete type=0 #55
+2024/12/09-17:12:26.194 29333 Level-0 table #61: started
+2024/12/09-17:12:26.208 29333 Level-0 table #61: 15374 bytes OK
+2024/12/09-17:12:26.216 29333 Delete type=0 #58
+2024/12/09-18:06:20.224 2241f Level-0 table #63: started
+2024/12/09-18:06:20.229 2241f Level-0 table #63: 15314 bytes OK
+2024/12/09-18:06:20.239 2241f Delete type=0 #60
