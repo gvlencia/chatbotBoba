@@ -20,8 +20,8 @@ const server = require('http').Server(app);
 // });
 
 // Specify the database name in the connection string
-// const databaseUrl = "mongodb+srv://gaizkavalencia1:OlBFfI4V9a2QkOol@cluster0.p0ajoom.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const databaseUrl = "mongodb+srv://gaizkavalencia1:OlBFfI4V9a2QkOol@cluster0.p0ajoom.mongodb.net/databaseWABoba?retryWrites=true&w=majority&appName=Cluster0"
+// const databaseUrl = "mongodb+srv://gaizkavalencia1:RhrafLkklqyzzqTH@cluster0.p0ajoom.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const databaseUrl = "mongodb+srv://gaizkavalencia1:RhrafLkklqyzzqTH@cluster0.p0ajoom.mongodb.net/databaseWABoba?retryWrites=true&w=majority&appName=Cluster0"
 
 // Connect to MongoDB using Mongoose
 console.log("Connect DB ...")
@@ -58,6 +58,10 @@ const akun_pesanan = require('./model/akun_pesanan')
 const payment_shipment = require('./model/payment_shipments')
 const complain_refund = require('./model/complain_refund')
 const nomorhpdefault = require('./model/default_number');
+
+const { postDataPhoneNumbers } = require('./controller/post/postPhoneNumbers');
+const { getDataPhoneNumbers } = require('./controller/get/getPhoneNumbers');
+const { deleteDataPhoneNumbers } = require('./controller/delete/deletePhoneNumbers')
 const { connect } = require('http2');
 
 const backtomenu = '0. Kembali ke menu utama';
@@ -71,15 +75,10 @@ let qrstring;
 let contactnumber;
 let status_socket = false;
 
-
-
-
-
-
 const createWhatsappSession = (nomorhp, res) => {
     console.log('Creating new WhatsApp client...');
 
-    const client = new Client({
+    client = new Client({
         authStrategy: new LocalAuth({
             clientId: nomorhp,
         }),
@@ -102,16 +101,7 @@ const createWhatsappSession = (nomorhp, res) => {
     // Handle when the client is ready
     client.on('ready', () => {
         console.log('Client is ready!');
-        const newData = new nomorhpdefault({
-            phonenumber: nomorhp,
-        });
-        newData.save()
-            .then(() => {
-                console.log('Phone number saved to database');
-            })
-            .catch((error) => {
-                console.error('Error saving phone number to database:', error);
-            });
+        postDataPhoneNumbers(nomorhp, res);
     });
 
     // Handle errors during initialization
@@ -132,12 +122,14 @@ const createWhatsappSession = (nomorhp, res) => {
 const loadWhatsappSession = (nomorhp) => {
     console.log('Loading WhatsApp client...');
 
-    return new Promise((resolve, reject) => {
-        const client = new Client({
+    console.log(nomorhp)
+    
+        client = new Client({
             authStrategy: new LocalAuth({
                 clientId: nomorhp,
             }),
         });
+
 
         // Handle authentication
         client.on('authenticated', () => {
@@ -147,51 +139,63 @@ const loadWhatsappSession = (nomorhp) => {
         // Handle when the client is ready
         client.on('ready', () => {
             console.log('WhatsApp client is ready!');
-            resolve({ message: 'WhatsApp session loaded successfully', status: 'connected' });
         });
 
         // Handle errors during initialization
         client.on('error', (error) => {
             console.error('Error initializing WhatsApp client:', error);
-            reject(error); // Reject the promise on error
         });
 
         client.initialize();
 
         // Start chat functionality
         chatWhatsApp(client);
-    });
 };
 
 
-const signoutWhatsappSession = async (nomorhp) => {
+const signoutWhatsappSession = async (nomorhp, res) => {
     try {
         // Find and delete the phone number from the database
-        const data = await nomorhpdefault.findOne({ phonenumber: nomorhp });
-        if (!data) {
+        const data = await getDataPhoneNumbers();
+        if (!data.data.chatbot_number) {
             console.log(`Phone number ${nomorhp} not found in database.`);
-            return { message: `Phone number ${nomorhp} not found.` };
+            return { success: false, message: `Phone number ${nomorhp} not found.` };
         }
 
-        await nomorhpdefault.deleteOne({ phonenumber: nomorhp });
+        // Delete from database first
+        await deleteDataPhoneNumbers(nomorhp, res);
         console.log(`Phone number ${nomorhp} deleted from database.`);
 
-        // Disconnect the WhatsApp client
+        // Disconnect the WhatsApp client if it exists
         if (client) {
+            // Set up disconnection handler before destroying
             client.on('disconnected', (reason) => {
-                console.log('WhatsApp client disconnected:', reason);
+                console.log('WhatsApp bot disconnected:', reason);
             });
 
-            
-            console.log('WhatsApp client disconnected successfully.');
+            try {
+                await client.destroy();
+                console.log('WhatsApp client disconnected successfully.');
+                client = null; // Clear the client reference
+            } catch (disconnectError) {
+                console.error('Error while disconnecting client:', disconnectError);
+                // Continue execution even if disconnect fails
+            }
         } else {
-            console.log('No active client to disconnect.');
+            console.log('No active WhatsApp client to disconnect.');
         }
 
-        return { message: 'WhatsApp session signed out successfully.' };
+        return { 
+            success: true, 
+            message: 'WhatsApp session signed out successfully.' 
+        };
     } catch (error) {
         console.error('Error during signout:', error);
-        throw new Error('Error signing out WhatsApp session.');
+        return {
+            success: false,
+            message: 'Error signing out WhatsApp session.',
+            error: error.message
+        };
     }
 };
 
@@ -199,21 +203,19 @@ const signoutWhatsappSession = async (nomorhp) => {
 const initializeWhatsappSessions = async () => {
     try {
         console.log('Initializing WhatsApp sessions for saved phone numbers...');
-        const savedNumbers = await nomorhpdefault.find({}); // Query all saved phone numbers
-
-        if (!savedNumbers || savedNumbers.length === 0) {
+        const savedNumbers = await getDataPhoneNumbers(); // Query all saved phone numbers
+        console.log(savedNumbers.data.chatbot_number)
+        if (!savedNumbers.data.chatbot_number) {
             console.log('No saved phone numbers found.');
             return;
         }
 
-        for (const { phonenumber } of savedNumbers) {
-            try {
-                console.log(`Loading session for ${phonenumber}...`);
-                await loadWhatsappSession(phonenumber); // Initialize the session
-                console.log(`Session loaded for ${phonenumber}`);
-            } catch (error) {
-                console.error(`Failed to load session for ${phonenumber}:`, error);
-            }
+        try {
+            console.log(`Loading session for ${savedNumbers.data.chatbot_number.phone}...`);
+            await loadWhatsappSession(savedNumbers.data.chatbot_number.phone); // Initialize the session
+            console.log(`Session loaded for ${savedNumbers.data.chatbot_number.phone}`);
+        } catch (error) {
+            console.error(`Failed to load session for ${savedNumbers.data.chatbot_number.phone}:`, error);
         }
     } catch (error) {
         console.error('Error initializing WhatsApp sessions:', error);
@@ -224,7 +226,7 @@ const initializeWhatsappSessions = async () => {
 // Get default phone number
 app.get('/default-phone', async (req, res) => {
     try {
-        const data = await nomorhpdefault.findOne({});
+        const data = await getDataPhoneNumbers();
         if (data) {
             console.log(data.phonenumber + ' data ditemukan');
             res.json({ nomorlogin: data.phonenumber });
@@ -244,13 +246,14 @@ app.post('/login', async (req, res) => {
     }
 
     try {
-        const data = await nomorhpdefault.findOne({ phonenumber: nomorhp });
-        if (data) {
+        const data = await getDataPhoneNumbers();
+        if (data.phone) {
             const result = await loadWhatsappSession(nomorhp); // Await session loading
             res.json(result); // Send the session status
-        } else {
+          } else {
+            // Handle case when no data is found
             createWhatsappSession(nomorhp, res); // Pass `res` to handle QR generation response
-        }
+          }
     } catch (error) {
         console.error('Error in login endpoint:', error);
         res.status(500).json({ message: 'Internal Server Error' });
@@ -284,11 +287,10 @@ app.post('/signout', async (req, res) => {
 
     try {
         console.log(nomorhp)
-        const result = await signoutWhatsappSession(nomorhp);
-        res.json(result);
+        await signoutWhatsappSession(nomorhp, res);
     } catch (error) {
         console.error('Error in signout route:', error);
-        res.status(500).json({ message: 'Failed to sign out WhatsApp session.' });
+        // res.status(500).json({ message: 'Failed to sign out WhatsApp session.' });
     }
 });
 
