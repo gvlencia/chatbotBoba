@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const qrcode = require('qrcode-terminal');
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
+require('dotenv').config();
 const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
@@ -21,33 +21,34 @@ const server = require('http').Server(app);
 
 // Specify the database name in the connection string
 // const databaseUrl = "mongodb+srv://gaizkavalencia1:RhrafLkklqyzzqTH@cluster0.p0ajoom.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const databaseUrl = "mongodb+srv://gaizkavalencia1:RhrafLkklqyzzqTH@cluster0.p0ajoom.mongodb.net/databaseWABoba?retryWrites=true&w=majority&appName=Cluster0"
+// const urldatabase = process.env.MONGODB_URI;
+// const databaseUrl = process.env.MONGODB_URI;
 
-// Connect to MongoDB using Mongoose
-console.log("Connect DB ...")
-mongoose.connect(databaseUrl, { serverSelectionTimeoutMS: 5000 })
-  .then(() => {
-    console.log('Connected to MongoDB databaseWABoba');
+// // Connect to MongoDB using Mongoose
+// console.log("Connect DB ...")
+// mongoose.connect(databaseUrl, { serverSelectionTimeoutMS: 5000 })
+//   .then(() => {
+//     console.log('Connected to MongoDB databaseWABoba');
 
-    // Create the store after successful connection
-    const store = new MongoStore({ mongoose: mongoose });
-  })
-  .catch(err => {
-    console.error('Error connecting to MongoDB:', err);
-  });
+//     // Create the store after successful connection
+//     const store = new MongoStore({ mongoose: mongoose });
+//   })
+//   .catch(err => {
+//     console.error('Error connecting to MongoDB:', err);
+//   });
 
-// Access the database connection
-const database = mongoose.connection;
+// // Access the database connection
+// const database = mongoose.connection;
 
 // Log a message when connected
-database.once("connected", () => {
-    console.log("Connected to MongoDB databaseWABoba");
-});
+// database.once("connected", () => {
+//     console.log("Connected to MongoDB databaseWABoba");
+// });
 
-// Handle connection errors
-database.on("error", (error) => {
-    console.error("MongoDB connection error:", error);
-});
+// // Handle connection errors
+// database.on("error", (error) => {
+//     console.error("MongoDB connection error:", error);
+// });
 
 
 
@@ -64,6 +65,14 @@ const { getDataPhoneNumbers } = require('./controller/get/getPhoneNumbers');
 const { deleteDataPhoneNumbers } = require('./controller/delete/deletePhoneNumbers')
 const { connect } = require('http2');
 
+const { postProgressChat } = require('./controller/post/postProgressChat');
+const { getProgressChat } = require('./controller/get/getProgressChat');
+const { updateProgressChat } = require('./controller/update/upgradeProgressChat');
+
+const { getQuestionAnswerByCategoryId } = require('./controller/get/getQuestionAnswerByCategoryId');
+const { getCategoryQuestion } = require('./controller/get/getCategoryQuestion');
+
+
 const backtomenu = '0. Kembali ke menu utama';
 
 // Middleware
@@ -74,6 +83,8 @@ let client;
 let qrstring;
 let contactnumber;
 let status_socket = false;
+
+let questionAnswer;
 
 const createWhatsappSession = (nomorhp, res) => {
     console.log('Creating new WhatsApp client...');
@@ -394,333 +405,200 @@ const chatWhatsApp = (client) => {
         console.log(message.from);
         console.log(message.body);
     
-        const query = progresschat.findOne({ nohp : message.from});
-        query.then(async (data) => {
-            console.log('Data Progress WA yang masuk:', data);
-    
-            //when user firsttime using chatbot
-            if(!data || data.status == false){
-                if ((message.body).toLowerCase().includes('halo boba')){
-                    const sendWelcomeMessage = async () => {
-                        let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan: ';
-                        try {
-                            const pertanyaan = pertanyaanumum.find({});
-                            pertanyaan.then((data) => {
-                                data.forEach((item, index) => {
-                                    kalimatAwal += `\n${index + 1}. ${item.pertanyaan}`;
-                                })
-                            })
-                            
-                            await client.sendMessage(message.from, 'Halo, Selamat Datang di Call Center Borong Bareng');
-                            await client.sendMessage(message.from, kalimatAwal);
-                        } catch (err) {
-                            console.error(err);
-                        }
-                    };
-    
+        const query = await getProgressChat(message.from);  
+        // const query = progresschat.findOne({ nohp : message.from});
+        console.log('Data Progress WA yang masuk:', query[0]);
+        
+        //when user firsttime using chatbot
+        if(!query[0] || query[0].status == 0){
+            if ((message.body).toLowerCase().includes('halo boba')){
+                const sendWelcomeMessage = async () => {
+                    let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan: ';
                     try {
-                        if (!data) {
-                            const newData = new progresschat({
-                                nohp: message.from,
-                                layanan: 'Begin',
-                                status: true,
-                            });
-                            await newData.save();
-                            await sendWelcomeMessage();
-                        } else {
-                            await progresschat.updateOne(
-                                { nohp: message.from },
-                                { $set: { layanan: 'Begin', status: true } },
-                            );
-                            await sendWelcomeMessage();
-                        }
+                        const pertanyaan = await getCategoryQuestion();
+                        pertanyaan.forEach((item, index) => {
+                            console.log(item.name)
+                            kalimatAwal += `\n${index + 1}. ${item.name}`;
+                        });
+                        
+                        await client.sendMessage(message.from, 'Halo, Selamat Datang di Call Center Borong Bareng');
+                        await client.sendMessage(message.from, kalimatAwal);
                     } catch (err) {
                         console.error(err);
                     }
-                } else {
-                    client.sendMessage(message.from, "Anda dapat memanggil ChatBot Boba dengan mengirimkan pesan: Halo Boba");
-                }
-            }
-    
-            //when user begin using chatbot or after send halo boba
-            else if (data.layanan == 'Begin'){
-                const handleReply = (message, service, list, replyText, backMenu) => {
-                    list.then((data) => {
-                        let options = replyText;
-                        data.forEach((item, index) => {
-                            options += `\n${index + 1}. ${item.pertanyaan}`;
-                        });
-                        progresschat
-                            .updateOne({ nohp: message.from }, { $set: { layanan: service } })
-                            .then(() => {
-                                client.sendMessage(message.from, options + '\n' + backMenu);
-                            })
-                            .catch(console.error);
-                    });
                 };
-                pertanyaanumum.find({}).then((questions) => {
-                    let shouldReply = false;
-    
-                    questions.forEach((item, index) => {
-                        if (shouldReply || message.body !== String(index + 1)) return;
-    
-                        shouldReply = true;
-    
-                        if (message.body === "1") {
-                            handleReply(message, "akun_pesanan", akun_pesanan.find({}),
-                            'Berikut ini pertanyaan seputar Akun & Pesanan:', backtomenu);
-                        } else if(message.body === "2") {
-                            handleReply(message, "payment_shipment", payment_shipment.find({}),
-                            'Berikut ini pertanyaan seputar Pembayaran & Pengiriman:', backtomenu);
-                        } else if(message.body === "3") {
-                            handleReply(message, "complain_refund", complain_refund.find({}),
-                            'Berikut ini pertanyaan seputar Komplain dan Pengembalian Dana (Refund):', backtomenu);
-                        }
-                    });
-                    if (!shouldReply) {
-                        (async () => {
-                            try {
-                                await client.sendMessage(message.from, 'Mohon maaf kami tidak memahami respon anda.');
-                                
-                                let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan:';
-                                questions.forEach((item, index) => {
-                                    kalimatAwal += `\n${index + 1}. ${item.pertanyaan}`;
-                                });
-                
-                                client.sendMessage(message.from, kalimatAwal);
-                            } catch (error) {
-                                console.error('Error sending messages:', error);
-                            }
-                        })();
-                    }
-                });
-                
-            }
-    
-            //when user last service in akun_pesanan using chatbot
-            else if (data.layanan === 'akun_pesanan' && data.status === true ){
-                if (message.body === "0") {
-                    pertanyaanumum.find({}).then((questions) => {
-                        let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan:';
-                        questions.forEach((item, index) => {
-                            kalimatAwal += `\n${index + 1}. ${item.pertanyaan}`;
-                        });
-            
-                        progresschat.updateOne(
-                            { nohp: message.from },
-                            { $set: { layanan: "Begin" } }
-                        ).then(() => {
-                            client.sendMessage(message.from, kalimatAwal);
-                        }).catch(console.error);
-                    });
-                } else {
-                    akun_pesanan.find({}).then((questions) => {
-                        const selectedQuestion = questions[parseInt(message.body) - 1];
-    
-                        if (selectedQuestion) {
-                            (async () => {
-                                try {
-                                    // Kirim jawaban dari selectedQuestion
-                                    await client.sendMessage(message.from, selectedQuestion.jawaban);
-                                    
-                                    // Kirim pesan selanjutnya setelah jawaban terkirim
-                                    await client.sendMessage(
-                                        message.from, 
-                                        'Apakah ada yang bisa dibantu lagi? \n\nBalas dengan Ya atau Tidak'
-                                    );
-                            
-                                    // Perbarui status layanan setelah pesan terkirim
-                                    await progresschat.updateOne(
-                                        { nohp: message.from },
-                                        { $set: { layanan: "Ending" } }
-                                    );
-                                } catch (error) {
-                                    console.error(error);
-                                }
-                            })();
-                           
-                        } else {
-                            let pilihanakun_pilihan = 'Mohon maaf kami tidak memahami respon anda.\nSilahkan pilih kembali:';
-                            questions.forEach((item, index) => {
-                                pilihanakun_pilihan += `\n${index + 1}. ${item.pertanyaan}`;
-                            });
-            
-                            client.sendMessage(message.from, pilihanakun_pilihan + '\n' + backtomenu);
-                        }
-    
-                    }).catch(console.error);
-                }
-            }
-    
-            //when user last service in payment_shipment using chatbot
-            else if (data.layanan === 'payment_shipment' && data.status === true ){
-                if (message.body === "0") {
-                    pertanyaanumum.find({}).then((questions) => {
-                        let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan:';
-                        questions.forEach((item, index) => {
-                            kalimatAwal += `\n${index + 1}. ${item.pertanyaan}`;
-                        });
-            
-                        progresschat.updateOne(
-                            { nohp: message.from },
-                            { $set: { layanan: "Begin" } }
-                        ).then(() => {
-                            client.sendMessage(message.from, kalimatAwal);
-                        }).catch(console.error);
-                    });
-                } else {
-                    payment_shipment.find({}).then((questions) => {
-                        const selectedQuestion = questions[parseInt(message.body) - 1];
-    
-                        if (selectedQuestion) {
-                            (async () => {
-                                try {
-                                    // Kirim jawaban dari selectedQuestion
-                                    await client.sendMessage(message.from, selectedQuestion.jawaban);
-                                    
-                                    // Kirim pesan selanjutnya setelah jawaban terkirim
-                                    await client.sendMessage(
-                                        message.from, 
-                                        'Apakah ada yang bisa dibantu lagi? \n\nBalas dengan Ya atau Tidak'
-                                    );
-                            
-                                    // Perbarui status layanan setelah pesan terkirim
-                                    await progresschat.updateOne(
-                                        { nohp: message.from },
-                                        { $set: { layanan: "Ending" } }
-                                    );
-                                } catch (error) {
-                                    console.error(error);
-                                }
-                            })();
-                           
-                        } else {
-                            let pilihan_payment_shipment = 'Mohon maaf kami tidak memahami respon anda.\nSilahkan pilih kembali:';
-                            questions.forEach((item, index) => {
-                                pilihan_payment_shipment += `\n${index + 1}. ${item.pertanyaan}`;
-                            });
-            
-                            client.sendMessage(message.from, pilihan_payment_shipment + '\n' + backtomenu);
-                        }
-    
-                    }).catch(console.error);
-                }
-            }
-    
-            //when user last service in complain_refund using chatbot
-            else if (data.layanan === 'complain_refund' && data.status === true ){
-                if (message.body === "0") {
-                    pertanyaanumum.find({}).then((questions) => {
-                        let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan:';
-                        questions.forEach((item, index) => {
-                            kalimatAwal += `\n${index + 1}. ${item.pertanyaan}`;
-                        });
-            
-                        progresschat.updateOne(
-                            { nohp: message.from },
-                            { $set: { layanan: "Begin" } }
-                        ).then(() => {
-                            client.sendMessage(message.from, kalimatAwal);
-                        }).catch(console.error);
-                    });
-                } else {
-                    complain_refund.find({}).then((questions) => {
-                        const selectedQuestion = questions[parseInt(message.body) - 1];
-    
-                        if (selectedQuestion) {
-                            (async () => {
-                                try {
-                                    // Kirim jawaban dari selectedQuestion
-                                    await client.sendMessage(message.from, selectedQuestion.jawaban);
-                                    
-                                    // Kirim pesan selanjutnya setelah jawaban terkirim
-                                    await client.sendMessage(
-                                        message.from, 
-                                        'Apakah ada yang bisa dibantu lagi? \n\nBalas dengan Ya atau Tidak'
-                                    );
-                            
-                                    // Perbarui status layanan setelah pesan terkirim
-                                    await progresschat.updateOne(
-                                        { nohp: message.from },
-                                        { $set: { layanan: "Ending" } }
-                                    );
-                                } catch (error) {
-                                    console.error(error);
-                                }
-                            })();
-                           
-                        } else {
-                            let pilihan_complain_refund = 'Mohon maaf kami tidak memahami respon anda.\nSilahkan pilih kembali:';
-                            questions.forEach((item, index) => {
-                                pilihan_complain_refund += `\n${index + 1}. ${item.pertanyaan}`;
-                            });
-            
-                            client.sendMessage(message.from, pilihan_complain_refund + '\n' + backtomenu);
-                        }
-    
-                    }).catch(console.error);
-                }
-            }
-    
-            //when user has get the final answer and wanna close the conversiation or back to main menu
-            else if (data.layanan == "Ending" && data.status == true){
-                if ((message.body).toLowerCase().includes('ya')){
-                    const sendWelcomeMessage = async () => {
-                        let kalimatAwal = '';
-                        let pilihanPertanyaan = ''
-                        try {
-                            const pertanyaanLagi = pertanyaanumum.find({});
-                            pertanyaanLagi.then((data) => {
-                                data.forEach((item, index) => {
-                                    kalimatAwal += `${index + 1}. ${item.pertanyaan}\n`;
-                                    console.log(kalimatAwal)
-                                })
-                            })
-                            
-                            await client.sendMessage(message.from, 'Silahkan pilih salah satu layanan yang anda inginkan: ');
-                            await client.sendMessage(message.from, kalimatAwal);
-                        } catch (err) {
-                            console.error(err);
-                        }
-                    };
 
-                    try {
-                        // localStorage.setItem(contact.number, "Begin")
-                        progresschat.updateOne(
-                            {nohp : message.from},
-                            { $set : {layanan : "Begin"} },
-                        ).then(() => {
-                            sendWelcomeMessage();
-                        })
-                        .catch((err) => {
-                            console.error(err);
+                try {
+                    if (!query) {
+                        await postProgressChat(message.from, 'Begin', true);
+                        await sendWelcomeMessage();
+                    } else {
+                        await updateProgressChat(message.from, 'Begin', true);
+                        await sendWelcomeMessage();
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            } else {
+                client.sendMessage(message.from, "Anda dapat memanggil ChatBot Boba dengan mengirimkan pesan: Halo Boba");
+            }
+        }
+
+        //when user begin using chatbot or after send halo boba
+        else if (query[0].service == 'Begin'){
+            const handleReply = async (message, service, listPromise, replyText, backMenu) => {
+                try {
+                    const data = await listPromise; // Await the promise to get the data
+                    let options = replyText;
+            
+                    data.forEach((item, index) => {
+                        options += `\n${index + 1}. ${item.question}`;
+                    });
+            
+                    await updateProgressChat(message.from, service, true); // Post progress to the chat service
+                    await client.sendMessage(message.from, options + '\n' + backMenu); // Send the message with options
+                } catch (error) {
+                    console.error('Error in handleReply:', error);
+                }
+            };
+            
+
+            (async () => {
+                try {
+                    const questions = await getCategoryQuestion();
+                    let shouldReply = false;
+            
+                    questions.forEach(async (item, index) => {
+                        if (shouldReply || message.body !== String(index + 1)) return;
+            
+                        shouldReply = true;
+            
+                        // Fetch child questions for the selected category
+                        const childQuestion = await getQuestionAnswerByCategoryId(message.body);
+                        console.log(childQuestion)
+            
+                        if (childQuestion?.length > 0) {
+                            questionAnswer = childQuestion
+                            handleReply(
+                                message,
+                                childQuestion[0].question_category.index,
+                                childQuestion,
+                                `Berikut ini pertanyaan seputar ${childQuestion[0].question_category.name}:`,
+                                backtomenu
+                            );
+                        } else {
+                            await client.sendMessage(
+                                message.from,
+                                'Tidak ada pertanyaan yang tersedia untuk kategori ini.'
+                            );
+                        }
+                    });
+            
+                    if (!shouldReply) {
+                        await client.sendMessage(message.from, 'Mohon maaf kami tidak memahami respon anda.');
+            
+                        let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan:';
+                        questions.forEach((item, index) => {
+                            kalimatAwal += `\n${index + 1}. ${item.name}`; // Assuming `item.name` holds the category name
                         });
+            
+                        await client.sendMessage(message.from, kalimatAwal);
+                    }
+                } catch (error) {
+                    console.error('Error fetching questions or sending messages:', error);
+                }
+            })();
+        }
+
+        //when user last service in akun_pesanan using chatbot
+        else if (query[0].service !== 'Begin' && query[0].status == 1 && query[0].service !== 'Ending' ){
+
+            if (message.body === "0") {
+                let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan: ';
+                try {
+                    const pertanyaan = await getCategoryQuestion();
+                    pertanyaan.forEach((item, index) => {
+                        kalimatAwal += `\n${index + 1}. ${item.name}`;
+                    });
+
+                    await updateProgressChat(message.from, 'Begin', true);
+                    await client.sendMessage(message.from, kalimatAwal);
+                } catch (err) {
+                    console.error(err);
+                }
+            } else {
+                const selectedQuestion = questionAnswer[parseInt(message.body) - 1];
+
+                if (selectedQuestion) {
+                    (async () => {
+                        try {
+                            // Kirim jawaban dari selectedQuestion
+                            await client.sendMessage(message.from, selectedQuestion.answer);
+                            
+                            // Kirim pesan selanjutnya setelah jawaban terkirim
+                            await client.sendMessage(
+                                message.from, 
+                                'Apakah ada yang bisa dibantu lagi? \n\nBalas dengan Ya atau Tidak'
+                            );
+                    
+                            // Perbarui status layanan setelah pesan terkirim
+                            await updateProgressChat(
+                                message.from,
+                                'Ending',
+                                true
+                            );
+                        } catch (error) {
+                            console.error(error);
+                        }
+                    })();
+                } else {
+                    let pilihanakun_pilihan = 'Mohon maaf kami tidak memahami respon anda.\nSilahkan pilih kembali:';
+                    questionAnswer.forEach((item, index) => {
+                        pilihanakun_pilihan += `\n${index + 1}. ${item.pertanyaan}`;
+                    });
+    
+                    client.sendMessage(message.from, pilihanakun_pilihan + '\n' + backtomenu);
+                }
+            }
+        }
+        else if (query[0].service == "Ending" && query[0].status == true){
+            if ((message.body).toLowerCase().includes('ya')){
+                const sendWelcomeMessage = async () => {
+                    let kalimatAwal = '';
+                    let pilihanPertanyaan = ''
+                    try {
+                        const pertanyaanLagi = await getCategoryQuestion();
+                        pertanyaanLagi.forEach((item, index) => {
+                            kalimatAwal += `\n${index + 1}. ${item.name}`;
+                        });
+                        
+                        await client.sendMessage(message.from, 'Silahkan pilih salah satu layanan yang anda inginkan: ');
+                        await client.sendMessage(message.from, kalimatAwal);
                     } catch (err) {
                         console.error(err);
                     }
-                     
-                    
-                }
-                else if ((message.body).toLowerCase().includes('tidak')){
-                    
-                    // localStorage.removeItem(contact.number)
-                    progresschat.updateOne(
-                        {nohp : message.from},
-                        { $set : {status : false} },
-                    ).then(()=> {
-                        client.sendMessage(message.from, 'Terima kasih sudah menghubungi Customer Service Borong Bareng');
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                    });
-                } else {
-                    client.sendMessage(message.from, 'Mohon maaf saya tidak memahami respon anda.\nSilahkan kembali memilih berdasarkan pilihan tersebut:');
-                    client.sendMessage(message.from, 'Apakah ada yang bisa dibantu lagi? \n\nBalas dengan Ya atau Tidak');
+                };
+
+                try {
+                    // localStorage.setItem(contact.number, "Begin")
+                    await updateProgressChat(message.from, 'Begin', true);
+                    await sendWelcomeMessage();
+                } catch (err) {
+                    console.error(err);
                 }
             }
-        });
+            else if ((message.body).toLowerCase().includes('tidak')){
+                // localStorage.removeItem(contact.number)
+                await updateProgressChat(message.from, 'Ending', false);
+                await client.sendMessage(message.from, 'Terima kasih sudah menghubungi Customer Service Borong Bareng');
+            } else {
+                client.sendMessage(message.from, 'Mohon maaf saya tidak memahami respon anda.\nSilahkan kembali memilih berdasarkan pilihan tersebut:');
+                client.sendMessage(message.from, 'Apakah ada yang bisa dibantu lagi? \n\nBalas dengan Ya atau Tidak');
+            }
+        }
     })
 }
+
 
 // Start the server
 const PORT = 3001;
