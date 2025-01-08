@@ -4,14 +4,13 @@ const axios = require('axios');
 async function postProgressChat(nomorhp, service, status, res) {
   try {
       const baseUrl = process.env.API_BASE_URL;
-      const url = `${baseUrl}/api/v1/chatbot/chat-progress`; 
-
       const token = process.env.API_TOKEN; // Fetch API token from environment variables
+      const url = `${baseUrl}/api/v1/chatbot/chat-progress`; 
 
       const response = await axios.post(url, 
         { 
             phone: nomorhp, 
-            service: service, 
+            service: `${service}`, 
             status: status 
         },
       {   
