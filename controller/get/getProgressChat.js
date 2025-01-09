@@ -10,21 +10,22 @@ async function getProgressChat(nomorhp) {
             throw new Error('API_BASE_URL or API_TOKEN is not set in environment variables');
         }
 
-        const url = `${baseUrl}/api/v1/chatbot/chat-progress`;
+        const url = `${baseUrl}/api/v1/chatbot/chat-progress/show`;
 
         console.log(`Fetching chat progress for phone number: ${nomorhp}`);
 
-        const response = await axios.get(url, {
-            params: {
-                phone: nomorhp, // Use the phone number dynamically
+        const response = await axios.post(url, 
+            {
+              phone : `${nomorhp}`
             },
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        // console.log(response.data.data.chatProgresses)
-        return response.data.data.chatProgresses; // Return the fetched data
+          {
+              headers: {
+                  'Authorization': `Bearer ${token}`, // Bearer token for authentication
+                  'Content-Type': 'application/json', // JSON content type
+              },
+          });
+        console.log(response.data.data.chatProgress)
+        return response.data.data; // Return the fetched data
     } catch (error) {
         console.error('Error fetching Progress Chat:', error.response?.data || error.message);
         throw new Error('Failed to fetch Progress Chat');

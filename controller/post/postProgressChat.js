@@ -9,7 +9,7 @@ async function postProgressChat(nomorhp, service, status, res) {
 
       const response = await axios.post(url, 
         { 
-            phone: nomorhp, 
+            phone: `${nomorhp}`, 
             service: `${service}`, 
             status: status 
         },

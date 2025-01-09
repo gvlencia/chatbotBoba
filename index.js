@@ -372,10 +372,10 @@ const chatWhatsApp = (client) => {
     
         const query = await getProgressChat(message.from);  
         // const query = progresschat.findOne({ nohp : message.from});
-        console.log('Data Progress WA yang masuk:', query[0]);
+        console.log('Data Progress WA yang masuk:', query.chatProgress);
         
         //when user firsttime using chatbot
-        if(!query[0] || query[0].status == 0){
+        if(!query.chatProgress || query.chatProgress.status == 0){
             if ((message.body).toLowerCase().includes('halo boba')){
                 const sendWelcomeMessage = async () => {
                     let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan: ';
@@ -394,7 +394,7 @@ const chatWhatsApp = (client) => {
                 };
 
                 try {
-                    if (!query) {
+                    if (!query.chatProgress) {
                         await postProgressChat(message.from, 'Begin', true);
                         await sendWelcomeMessage();
                     } else {
@@ -410,7 +410,7 @@ const chatWhatsApp = (client) => {
         }
 
         //when user begin using chatbot or after send halo boba
-        else if (query[0].service == 'Begin'){
+        else if (query.chatProgress.service == 'Begin'){
             const handleReply = async (message, service, listPromise, replyText, backMenu) => {
                 try {
                     const data = await listPromise; // Await the promise to get the data
@@ -476,7 +476,7 @@ const chatWhatsApp = (client) => {
         }
 
         //when user last service in akun_pesanan using chatbot
-        else if (query[0].service !== 'Begin' && query[0].status == 1 && query[0].service !== 'Ending' ){
+        else if (query.chatProgress.service !== 'Begin' && query.chatProgress.status == 1 && query.chatProgress.service !== 'Ending' ){
 
             if (message.body === "0") {
                 let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan: ';
@@ -492,7 +492,7 @@ const chatWhatsApp = (client) => {
                     console.error(err);
                 }
             } else {
-                const questionAnswer = await getQuestionAnswerByCategoryId(query[0].service);
+                const questionAnswer = await getQuestionAnswerByCategoryId(query.chatProgress.service);
                 const selectedQuestion = questionAnswer[parseInt(message.body) - 1];
 
                 if (selectedQuestion) {
@@ -538,7 +538,7 @@ const chatWhatsApp = (client) => {
                 }
             }
         }
-        else if (query[0].service == "Ending" && query[0].status == true){
+        else if (query.chatProgress.service == "Ending" && query.chatProgress.status == true){
             if ((message.body).toLowerCase().includes('ya')){
                 const sendWelcomeMessage = async () => {
                     let kalimatAwal = '';
