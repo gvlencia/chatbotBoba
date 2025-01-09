@@ -88,10 +88,10 @@ const createWhatsappSession = (nomorhp, res) => {
 
     
 
-    // // Handle authentication
-    // client.on('authenticated', () => {
-    //     console.log('Client authenticated using saved session!');
-    // });
+    // Handle authentication
+    client.on('authenticated', () => {
+        console.log('Client authenticated using saved session!');
+    });
 
     // client.on('remote_session_saved', () => {
     //     console.log("remote_session_saved");
