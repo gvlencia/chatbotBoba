@@ -1,5 +1,5 @@
 const { Client, MessageMedia, MessageAck, RemoteAuth } = require('whatsapp-web.js');
-const { AwsS3Store, S3Client } = require('../src/AwsS3Store');
+const { AwsS3Store, S3Client } = require('./src/AwsS3Store');
 
 const s3 = new S3Client({
     region: process.env.AWS_DEFAULT_REGION,
