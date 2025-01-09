@@ -60,7 +60,7 @@ const { getCategoryQuestion } = require('./controller/get/getCategoryQuestion');
 const backtomenu = '0. Kembali ke menu utama';
 
 // Middleware
-app.use(cors());
+// app.use(cors());
 app.use(express.json());
 
 app.use(cors({
