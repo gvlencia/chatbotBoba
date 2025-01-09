@@ -66,6 +66,10 @@ const createWhatsappSession = (nomorhp, res) => {
     // Handle when the client is ready
     client.on('ready', () => {
         console.log('Client is ready!');
+        res.json({
+            login: true,
+            message: 'Whatsapp ready',
+        });
         postDataPhoneNumbers(nomorhp, res);
     });
 
@@ -107,6 +111,9 @@ const loadWhatsappSession = (nomorhp) => {
         // Handle when the client is ready
         client.on('ready', () => {
             console.log('WhatsApp client is ready!');
+            res.json({
+                message: 'Whatsapp ready',
+            });
         });
 
         // Handle errors during initialization
@@ -125,9 +132,9 @@ const signoutWhatsappSession = async (nomorhp, res) => {
     try {
         // Find and delete the phone number from the database
         const data = await getDataPhoneNumbers();
-        if (!data.data.chatbot_number) {
-            console.log(`Phone number ${nomorhp} not found in database.`);
-            return { success: false, message: `Phone number ${nomorhp} not found.` };
+        if (!data) {
+            console.log(`Phone number ${data.nomorhp} not found in database.`);
+            return { success: false, message: `Phone number ${data.nomorhp} not found.` };
         }
 
         // Delete from database first
@@ -144,6 +151,9 @@ const signoutWhatsappSession = async (nomorhp, res) => {
             try {
                 await client.destroy();
                 console.log('WhatsApp client disconnected successfully.');
+                res.json({
+                    message: 'Whatsapp Logout',
+                });
                 client = null; // Clear the client reference
             } catch (disconnectError) {
                 console.error('Error while disconnecting client:', disconnectError);
@@ -172,18 +182,18 @@ const initializeWhatsappSessions = async () => {
     try {
         console.log('Initializing WhatsApp sessions for saved phone numbers...');
         const savedNumbers = await getDataPhoneNumbers(); // Query all saved phone numbers
-        console.log(savedNumbers.data.chatbot_number)
-        if (!savedNumbers.data.chatbot_number) {
+        console.log(savedNumbers)
+        if (!savedNumbers) {
             console.log('No saved phone numbers found.');
             return;
         }
 
         try {
-            console.log(`Loading session for ${savedNumbers.data.chatbot_number.phone}...`);
-            await loadWhatsappSession(savedNumbers.data.chatbot_number.phone); // Initialize the session
-            console.log(`Session loaded for ${savedNumbers.data.chatbot_number.phone}`);
+            console.log(`Loading session for ${savedNumbers.phone}...`);
+            await loadWhatsappSession(savedNumbers.phone); // Initialize the session
+            console.log(`Session loaded for ${savedNumbers.phone}`);
         } catch (error) {
-            console.error(`Failed to load session for ${savedNumbers.data.chatbot_number.phone}:`, error);
+            console.error(`Failed to load session for ${savedNumbers.phone}:`, error);
         }
     } catch (error) {
         console.error('Error initializing WhatsApp sessions:', error);
@@ -215,13 +225,13 @@ app.post('/login', async (req, res) => {
 
     try {
         const data = await getDataPhoneNumbers();
-        if (data.phone) {
-            const result = await loadWhatsappSession(nomorhp); // Await session loading
-            res.json(result); // Send the session status
-          } else {
-            // Handle case when no data is found
+        if (data) {
+            loadWhatsappSession(nomorhp); // Await session loading
+            // res.json(result); // Send the session status
+        } else {
+        // Handle case when no data is found
             createWhatsappSession(nomorhp, res); // Pass `res` to handle QR generation response
-          }
+        }
     } catch (error) {
         console.error('Error in login endpoint:', error);
         res.status(500).json({ message: 'Internal Server Error' });
@@ -232,7 +242,8 @@ app.post('/login', async (req, res) => {
 
 // Broadcast message
 app.post('/broadcast', async (req, res) => {
-    const { phonenumbers, message } = req.body;
+    const { phonenumbers } = req.body.phones;
+    const { message } = req.body.message
     if (!phonenumbers || !Array.isArray(phonenumbers)) {
         return res.status(400).json({ message: 'Valid phone numbers are required' });
     }
@@ -304,17 +315,28 @@ app.post('/signout', async (req, res) => {
 const WhatsappBroadcast = async (phonenumbers, message) => {
     for (let i = 0; i < phonenumbers.length; i++) {
         const number = phonenumbers[i];
-        try{
-            const number_details = await client.getNumberId(number);
+        const sanitized_number = number.value.toString().replace(/[- )(]/g, "");
+        const final_number = `628${sanitized_number.substring(sanitized_number.length - 10)}`;
+
+        try {
+            const number_details = await client.getNumberId(final_number);
+            
+            // Skip if number_details is null or undefined
+            if (!number_details) {
+                console.warn(`Skipping: No WhatsApp account found for ${final_number}`);
+                continue;
+            }
+
             await client.sendMessage(number_details._serialized, message);
-            console.log('Message sent successfully to', number);
+            console.log('Message sent successfully to', number_details._serialized);
         } catch (error) {
             console.error('Error sending message to', number, error);
         }
 
         await sleep(delay);
     }
-}
+};
+
 
 const sendMessage = async (phonenumber, message) => {
     const number = phonenumber;
@@ -470,21 +492,32 @@ const chatWhatsApp = (client) => {
                     console.error(err);
                 }
             } else {
+                const questionAnswer = await getQuestionAnswerByCategoryId(query[0].service);
                 const selectedQuestion = questionAnswer[parseInt(message.body) - 1];
 
                 if (selectedQuestion) {
                     (async () => {
                         try {
-                            // Kirim jawaban dari selectedQuestion
+                            if (selectedQuestion.broadcast_files.length > 0) {
+                                const file = selectedQuestion.broadcast_files;
+                
+                                // Use a for...of loop for asynchronous operations
+                                for (const item of file) {
+                                    const media = await MessageMedia.fromUrl(item.file_path);
+                                    await client.sendMessage(message.from, media);
+                                }
+                            }
+                
+                            // Send the answer from selectedQuestion
                             await client.sendMessage(message.from, selectedQuestion.answer);
-                            
-                            // Kirim pesan selanjutnya setelah jawaban terkirim
+                
+                            // Send a follow-up message after the answer
                             await client.sendMessage(
                                 message.from, 
                                 'Apakah ada yang bisa dibantu lagi? \n\nBalas dengan Ya atau Tidak'
                             );
-                    
-                            // Perbarui status layanan setelah pesan terkirim
+                
+                            // Update the chat progress after messages are sent
                             await updateProgressChat(
                                 message.from,
                                 'Ending',
@@ -496,8 +529,9 @@ const chatWhatsApp = (client) => {
                     })();
                 } else {
                     let pilihanakun_pilihan = 'Mohon maaf kami tidak memahami respon anda.\nSilahkan pilih kembali:';
+                    console.log(questionAnswer)
                     questionAnswer.forEach((item, index) => {
-                        pilihanakun_pilihan += `\n${index + 1}. ${item.pertanyaan}`;
+                        pilihanakun_pilihan += `\n${index + 1}. ${item.question}`;
                     });
     
                     client.sendMessage(message.from, pilihanakun_pilihan + '\n' + backtomenu);

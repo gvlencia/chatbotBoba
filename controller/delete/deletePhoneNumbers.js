@@ -25,7 +25,7 @@ async function deleteDataPhoneNumbers(nomorhp, res) {
 
       console.log('Phone number delete successfully:', response.data);
       if (!res.headersSent) {
-          res.status(200).json(response.data); // Respond with success data
+          res.status(200).json({logout: true, message: 'Whatsapp Logout',}); // Respond with success data
       }
   } catch (error) {
       console.error('Error saving phone number:', error.message);

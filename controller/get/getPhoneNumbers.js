@@ -14,8 +14,8 @@ async function getDataPhoneNumbers() {
                 'Content-Type': 'application/json',
             },
         });
-
-        return response.data; // Return the fetched data
+        console.log(response.data.data)
+        return response.data.data?.chatbot_number; // Return the fetched data
     } catch (error) {
         console.error('Error fetching phone numbers:', error.message);
         throw new Error('Failed to fetch phone numbers');

@@ -12,7 +12,7 @@ async function getProgressChat(nomorhp) {
 
         const url = `${baseUrl}/api/v1/chatbot/chat-progress`;
 
-        // console.log(`Fetching chat progress for phone number: ${nomorhp}`);
+        console.log(`Fetching chat progress for phone number: ${nomorhp}`);
 
         const response = await axios.get(url, {
             params: {
