@@ -13,52 +13,6 @@ const { MongoStore } = require('wwebjs-mongo');
 
 
 const server = require('http').Server(app);
-// const io = require('socket.io')(server, {
-//     cors: {
-//       origin: 'http://localhost:3000'
-//   }
-// });
-
-// Specify the database name in the connection string
-// const databaseUrl = "mongodb+srv://gaizkavalencia1:RhrafLkklqyzzqTH@cluster0.p0ajoom.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-// const urldatabase = process.env.MONGODB_URI;
-// const databaseUrl = process.env.MONGODB_URI;
-
-// // Connect to MongoDB using Mongoose
-// console.log("Connect DB ...")
-// mongoose.connect(databaseUrl, { serverSelectionTimeoutMS: 5000 })
-//   .then(() => {
-//     console.log('Connected to MongoDB databaseWABoba');
-
-//     // Create the store after successful connection
-//     const store = new MongoStore({ mongoose: mongoose });
-//   })
-//   .catch(err => {
-//     console.error('Error connecting to MongoDB:', err);
-//   });
-
-// // Access the database connection
-// const database = mongoose.connection;
-
-// Log a message when connected
-// database.once("connected", () => {
-//     console.log("Connected to MongoDB databaseWABoba");
-// });
-
-// // Handle connection errors
-// database.on("error", (error) => {
-//     console.error("MongoDB connection error:", error);
-// });
-
-
-
-
-const progresschat = require('./model/progress_wa');
-const pertanyaanumum = require('./model/default_question')
-const akun_pesanan = require('./model/akun_pesanan')
-const payment_shipment = require('./model/payment_shipments')
-const complain_refund = require('./model/complain_refund')
-const nomorhpdefault = require('./model/default_number');
 
 const { postDataPhoneNumbers } = require('./controller/post/postPhoneNumbers');
 const { getDataPhoneNumbers } = require('./controller/get/getPhoneNumbers');
@@ -80,9 +34,6 @@ app.use(cors());
 app.use(express.json());
 
 let client;
-let qrstring;
-let contactnumber;
-let status_socket = false;
 
 let questionAnswer;
 
@@ -93,6 +44,9 @@ const createWhatsappSession = (nomorhp, res) => {
         authStrategy: new LocalAuth({
             clientId: nomorhp,
         }),
+        puppeteer: {
+            args: ['--no-sandbox'],
+        }
     });
 
     // Handle QR code generation
@@ -139,6 +93,9 @@ const loadWhatsappSession = (nomorhp) => {
             authStrategy: new LocalAuth({
                 clientId: nomorhp,
             }),
+            puppeteer: {
+                args: ['--no-sandbox'],
+            }
         });
 
 
@@ -385,20 +342,6 @@ app.post('/sendmessage', async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
-
-// client = new Client({
-//     authStrategy: new LocalAuth({
-//         dataPath: 'login'
-//     })
-// });
-
-// client.on('qr', qr => {
-//     qrcode.generate(qr, {small: true});
-// });
-
-// client.on('ready', () => {
-//     console.log('Client is ready!');
-// });
 
 const chatWhatsApp = (client) => {
     client.on('message', async (message) => {
