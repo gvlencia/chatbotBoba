@@ -1,12 +1,6 @@
-const { Client, LocalAuth, MessageMedia, MessageAck, RemoteAuth } = require('whatsapp-web.js');
-const { AwsS3Store } = require('wwebjs-aws-s3');
-const {
-    S3Client,
-    PutObjectCommand,
-    HeadObjectCommand,
-    GetObjectCommand,
-    DeleteObjectCommand
-} = require('@aws-sdk/client-s3');
+const { Client, MessageMedia, MessageAck, RemoteAuth } = require('whatsapp-web.js');
+const { AwsS3Store, S3Client } = require('../src/AwsS3Store');
+
 const s3 = new S3Client({
     region: process.env.AWS_DEFAULT_REGION,
     credentials: {
@@ -14,19 +8,11 @@ const s3 = new S3Client({
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
     }
 });
-const putObjectCommand = PutObjectCommand;
-const headObjectCommand = HeadObjectCommand;
-const getObjectCommand = GetObjectCommand;
-const deleteObjectCommand = DeleteObjectCommand;
 
 const store = new AwsS3Store({
     bucketName: process.env.AWS_BUCKET,
-    remoteDataPath: 'public/chatbot/',
+    remoteDataPath: 'public/chatbot',
     s3Client: s3,
-    putObjectCommand,
-    headObjectCommand,
-    getObjectCommand,
-    deleteObjectCommand
 });
 
 const mongoose = require('mongoose');
@@ -79,7 +65,7 @@ const createWhatsappSession = (nomorhp, res) => {
     client = new Client({
         authStrategy: new RemoteAuth({
             clientId: nomorhp,
-            dataPath: 'session',
+            dataPath: './.wwebjs_auth',
             store: store,
             backupSyncIntervalMs: 600000
         }),
@@ -99,14 +85,14 @@ const createWhatsappSession = (nomorhp, res) => {
 
     
 
-    // Handle authentication
-    client.on('authenticated', () => {
-        console.log('Client authenticated using saved session!');
-    });
+    // // Handle authentication
+    // client.on('authenticated', () => {
+    //     console.log('Client authenticated using saved session!');
+    // });
 
-    client.on('remote_session_saved', () => {
-        console.log("remote_session_saved");
-     })
+    // client.on('remote_session_saved', () => {
+    //     console.log("remote_session_saved");
+    //  })
 
     // Handle when the client is ready
     client.on('ready', () => {
