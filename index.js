@@ -21,7 +21,7 @@ const deleteObjectCommand = DeleteObjectCommand;
 
 const store = new AwsS3Store({
     bucketName: process.env.AWS_BUCKET,
-    remoteDataPath: '/public/chatbot/',
+    remoteDataPath: 'public/chatbot/',
     s3Client: s3,
     putObjectCommand,
     headObjectCommand,
@@ -97,10 +97,16 @@ const createWhatsappSession = (nomorhp, res) => {
         }); // Send QR code as soon as it is generated
     });
 
+    
+
     // Handle authentication
     client.on('authenticated', () => {
         console.log('Client authenticated using saved session!');
     });
+
+    client.on('remote_session_saved', () => {
+        console.log("remote_session_saved");
+     })
 
     // Handle when the client is ready
     client.on('ready', () => {
