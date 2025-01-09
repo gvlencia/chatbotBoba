@@ -1,4 +1,34 @@
-const { Client, LocalAuth, MessageMedia, MessageAck } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia, MessageAck, RemoteAuth } = require('whatsapp-web.js');
+const { AwsS3Store } = require('wwebjs-aws-s3');
+const {
+    S3Client,
+    PutObjectCommand,
+    HeadObjectCommand,
+    GetObjectCommand,
+    DeleteObjectCommand
+} = require('@aws-sdk/client-s3');
+const s3 = new S3Client({
+    region: 'AWS_REGION',
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    }
+});
+const putObjectCommand = PutObjectCommand;
+const headObjectCommand = HeadObjectCommand;
+const getObjectCommand = GetObjectCommand;
+const deleteObjectCommand = DeleteObjectCommand;
+
+const store = new AwsS3Store({
+    bucketName: process.env.AWS_BUCKET,
+    remoteDataPath: 'public/chatbot/',
+    s3Client: s3,
+    putObjectCommand,
+    headObjectCommand,
+    getObjectCommand,
+    deleteObjectCommand
+});
+
 const mongoose = require('mongoose');
 const qrcode = require('qrcode-terminal');
 const express = require('express');
@@ -41,8 +71,11 @@ const createWhatsappSession = (nomorhp, res) => {
     console.log('Creating new WhatsApp client...');
 
     client = new Client({
-        authStrategy: new LocalAuth({
+        authStrategy: new RemoteAuth({
             clientId: nomorhp,
+            dataPath: 'session',
+            store: store,
+            backupSyncIntervalMs: 600000
         }),
         puppeteer: {
             args: ['--no-sandbox'],
@@ -94,8 +127,11 @@ const loadWhatsappSession = (nomorhp) => {
     console.log(nomorhp)
     
         client = new Client({
-            authStrategy: new LocalAuth({
+            authStrategy: new RemoteAuth({
                 clientId: nomorhp,
+                dataPath: 'session',
+                store: store,
+                backupSyncIntervalMs: 600000
             }),
             puppeteer: {
                 args: ['--no-sandbox'],
