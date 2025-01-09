@@ -21,7 +21,7 @@ const deleteObjectCommand = DeleteObjectCommand;
 
 const store = new AwsS3Store({
     bucketName: process.env.AWS_BUCKET,
-    remoteDataPath: 'public/chatbot/',
+    remoteDataPath: '/public/chatbot/',
     s3Client: s3,
     putObjectCommand,
     headObjectCommand,
