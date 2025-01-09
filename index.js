@@ -1,22 +1,22 @@
 const { Client, MessageMedia, MessageAck, RemoteAuth, LocalAuth } = require('whatsapp-web.js');
-const { AwsS3Store, S3Client } = require('./src/AwsS3Store');
+// const { AwsS3Store, S3Client } = require('./src/AwsS3Store')
 
-const s3 = new S3Client({
-    region: process.env.AWS_DEFAULT_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    },
-    httpOptions: {
-        timeout: 600000, // 10 minutes <-- increase this value for large file uploads
-    },
-});
+// const s3 = new S3Client({
+//     region: process.env.AWS_DEFAULT_REGION,
+//     credentials: {
+//         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+//     },
+//     httpOptions: {
+//         timeout: 600000, // 10 minutes <-- increase this value for large file uploads
+//     },
+// });
 
-const store = new AwsS3Store({
-    bucketName: process.env.AWS_BUCKET,
-    remoteDataPath: 'public/chatbot',
-    s3Client: s3,
-});
+// const store = new AwsS3Store({
+//     bucketName: process.env.AWS_BUCKET,
+//     remoteDataPath: 'public/chatbot',
+//     s3Client: s3,
+// });
 
 const mongoose = require('mongoose');
 const qrcode = require('qrcode-terminal');
@@ -86,12 +86,18 @@ const createWhatsappSession = (nomorhp, res) => {
         }); // Send QR code as soon as it is generated
     });
 
-    
+    console.log(client)
 
     // Handle authentication
     client.on('authenticated', () => {
         console.log('Client authenticated using saved session!');
     });
+
+    client.on('auth_failure', msg => {
+        console.error('WhatsApp client authentication failure', msg);
+    });
+
+    console.log("mau ready nihhh")
 
     // client.on('remote_session_saved', () => {
     //     console.log("remote_session_saved");
