@@ -1,4 +1,4 @@
-const { Client, MessageMedia, MessageAck, RemoteAuth } = require('whatsapp-web.js');
+const { Client, MessageMedia, MessageAck, RemoteAuth, LocalAuth } = require('whatsapp-web.js');
 const { AwsS3Store, S3Client } = require('./src/AwsS3Store');
 
 const s3 = new S3Client({
@@ -6,7 +6,10 @@ const s3 = new S3Client({
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
+    },
+    httpOptions: {
+        timeout: 600000, // 10 minutes <-- increase this value for large file uploads
+    },
 });
 
 const store = new AwsS3Store({
@@ -63,11 +66,11 @@ const createWhatsappSession = (nomorhp, res) => {
     console.log('Creating new WhatsApp client...');
 
     client = new Client({
-        authStrategy: new RemoteAuth({
+        authStrategy: new LocalAuth({
             clientId: nomorhp,
-            dataPath: './.wwebjs_auth',
-            store: store,
-            backupSyncIntervalMs: 600000
+            // dataPath: './.wwebjs_auth',
+            // store: store,
+            // backupSyncIntervalMs: 600000
         }),
         puppeteer: {
             args: ['--no-sandbox'],
@@ -125,11 +128,11 @@ const loadWhatsappSession = (nomorhp) => {
     console.log(nomorhp)
     
         client = new Client({
-            authStrategy: new RemoteAuth({
+            authStrategy: new LocalAuth({
                 clientId: nomorhp,
-                dataPath: 'session',
-                store: store,
-                backupSyncIntervalMs: 600000
+                // dataPath: 'session',
+                // store: store,
+                // backupSyncIntervalMs: 600000
             }),
             puppeteer: {
                 args: ['--no-sandbox'],
