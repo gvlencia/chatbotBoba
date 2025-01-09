@@ -63,6 +63,12 @@ const backtomenu = '0. Kembali ke menu utama';
 app.use(cors());
 app.use(express.json());
 
+app.use(cors({
+    origin: 'https://collective.technologycellar.com/',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 let client;
 
 let questionAnswer;
