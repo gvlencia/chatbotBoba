@@ -72,10 +72,10 @@ const createWhatsappSession = (nomorhp, res) => {
             // store: store,
             // backupSyncIntervalMs: 600000
         }),
-        puppeteer: {
-            headless: true, // Ensures no UI is shown
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'], // Disables unnecessary features
-        }
+        // puppeteer: {
+        //     headless: true, // Ensures no UI is shown
+        //     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'], // Disables unnecessary features
+        // }
     });
 
     // Handle QR code generation
@@ -141,10 +141,10 @@ const loadWhatsappSession = (nomorhp) => {
                 // store: store,
                 // backupSyncIntervalMs: 600000
             }),
-            puppeteer: {
-                headless: true, // Ensures no UI is shown
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'], // Disables unnecessary features
-            }
+            // puppeteer: {
+            //     headless: true, // Ensures no UI is shown
+            //     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'], // Disables unnecessary features
+            // }
         });
 
 
