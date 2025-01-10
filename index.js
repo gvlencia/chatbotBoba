@@ -73,7 +73,8 @@ const createWhatsappSession = (nomorhp, res) => {
             // backupSyncIntervalMs: 600000
         }),
         puppeteer: {
-            args: ['--no-sandbox'],
+            headless: true, // Ensures no UI is shown
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'], // Disables unnecessary features
         }
     });
 
@@ -141,7 +142,8 @@ const loadWhatsappSession = (nomorhp) => {
                 // backupSyncIntervalMs: 600000
             }),
             puppeteer: {
-                args: ['--no-sandbox'],
+                headless: true, // Ensures no UI is shown
+                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'], // Disables unnecessary features
             }
         });
 
