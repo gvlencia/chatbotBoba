@@ -53,7 +53,7 @@ const backtomenu = '0. Kembali ke menu utama';
 app.use(express.json());
 
 app.use(cors({
-    origin: 'https://collective.technologycellar.com',
+    origin: 'https://borongbareng.com/',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));

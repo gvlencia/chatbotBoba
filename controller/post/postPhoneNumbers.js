@@ -14,7 +14,7 @@ async function postDataPhoneNumbers(nomorhp, res) {
       console.log(nomorhp)
       const response = await axios.post(url, 
         {
-          "phone" : `${nomorhp}`
+          phone : `${nomorhp}`
         },
       {
           headers: {
