@@ -49,14 +49,14 @@ const { getCategoryQuestion } = require('./controller/get/getCategoryQuestion');
 const backtomenu = '0. Kembali ke menu utama';
 
 // Middleware
-// app.use(cors());
+app.use(cors());
 app.use(express.json());
 
-app.use(cors({
-    origin: 'https://borongbareng.com/',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// app.use(cors({
+//     origin: 'https://borongbareng.com/',
+//     methods: ['GET', 'POST'],
+//     allowedHeaders: ['Content-Type', 'Authorization']
+// }));
 
 let client;
 
@@ -87,7 +87,7 @@ const createWhatsappSession = (nomorhp, res) => {
         }); // Send QR code as soon as it is generated
     });
 
-    console.log(client)
+    // console.log(client)
 
     // Handle authentication
     client.on('authenticated', () => {
