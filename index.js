@@ -385,8 +385,13 @@ const WhatsappBroadcast = async (phonenumbers, message) => {
 
 const sendMessage = async (phonenumber, message) => {
     const number = phonenumber;
+    const sanitized_number = number.value.toString().replace(/[- )(]/g, "");
+    const final_number = `628${sanitized_number.substring(sanitized_number.length - 10)}`;
     try{
-        const number_details = await client.getNumberId(number);
+        const number_details = await client.getNumberId(final_number);
+        if (!number_details) {
+            console.warn(`Skipping: No WhatsApp account found for ${final_number}`);
+        }
         await client.sendMessage(number_details._serialized, message);
         console.log('Message sent successfully to', number)
     } catch (error) {
