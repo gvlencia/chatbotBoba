@@ -49,14 +49,14 @@ const { getCategoryQuestion } = require('./controller/get/getCategoryQuestion');
 const backtomenu = '0. Kembali ke menu utama';
 
 // Middleware
-app.use(cors());
+// app.use(cors());
 app.use(express.json());
 
-// app.use(cors({
-//     origin: 'https://collective.technologycellar.com/',
-//     methods: ['GET', 'POST'],
-//     allowedHeaders: ['Content-Type', 'Authorization']
-// }));
+app.use(cors({
+    origin: ['https://collective.technologycellar.com/', 'https://api-collective.technologycellar.com/', 'https://borongbareng.com/', 'https://api.borongbareng.com/'],
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}))
 
 let client;
 
