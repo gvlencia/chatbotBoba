@@ -49,14 +49,14 @@ const { getCategoryQuestion } = require('./controller/get/getCategoryQuestion');
 const backtomenu = '0. Kembali ke menu utama';
 
 // Middleware
-// app.use(cors());
+app.use(cors());
 app.use(express.json());
 
-app.use(cors({
-    origin: 'https://collective.technologycellar.com/',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// app.use(cors({
+//     origin: 'https://collective.technologycellar.com/',
+//     methods: ['GET', 'POST'],
+//     allowedHeaders: ['Content-Type', 'Authorization']
+// }));
 
 let client;
 
@@ -368,7 +368,23 @@ const WhatsappBroadcast = async (phonenumbers, message) => {
     for (let i = 0; i < phonenumbers.length; i++) {
         const number = phonenumbers[i]; // Directly get the number as a string
         const sanitized_number = number.toString().replace(/[- )(]/g, "");
-        const final_number = `628${sanitized_number.substring(sanitized_number.length - 10)}`;
+        let final_number;
+        if (sanitized_number.startsWith("62")) {
+            // If already starts with country code
+            final_number = sanitized_number;
+        } else if (sanitized_number.length === 10) {
+            // Add the country code for 11-digit numbers
+            final_number = `62${sanitized_number}`;
+        } else if (sanitized_number.length === 11) {
+            // Add the country code for 11-digit numbers
+            final_number = `62${sanitized_number}`;
+        } else if (sanitized_number.length === 12) {
+            // Add the country code for 12-digit numbers
+            final_number = `62${sanitized_number}`;
+        } else {
+            console.warn(`Invalid phone number: ${number}`);
+            // continue; // Skip invalid numbers
+        }
 
         try {
             const number_details = await client.getNumberId(final_number);
@@ -393,8 +409,24 @@ const WhatsappBroadcast = async (phonenumbers, message) => {
 
 const sendMessage = async (phonenumber, message) => {
     const number = phonenumber;
-    const sanitized_number = number.value.toString().replace(/[- )(]/g, "");
-    const final_number = `628${sanitized_number.substring(sanitized_number.length - 10)}`;
+    const sanitized_number = number.toString().replace(/[- )(]/g, "");
+    let final_number;
+        if (sanitized_number.startsWith("62")) {
+            // If already starts with country code
+            final_number = sanitized_number;
+        } else if (sanitized_number.length === 10) {
+            // Add the country code for 11-digit numbers
+            final_number = `62${sanitized_number}`;
+        } else if (sanitized_number.length === 11) {
+            // Add the country code for 11-digit numbers
+            final_number = `62${sanitized_number}`;
+        } else if (sanitized_number.length === 12) {
+            // Add the country code for 12-digit numbers
+            final_number = `62${sanitized_number}`;
+        } else {
+            console.warn(`Invalid phone number: ${number}`);
+            // continue; // Skip invalid numbers
+        }
     try{
         const number_details = await client.getNumberId(final_number);
         if (!number_details) {
@@ -409,19 +441,27 @@ const sendMessage = async (phonenumber, message) => {
 
 // Send Message 
 app.post('/sendmessage', async (req, res) => {
-    const { phonenumber, message } = req.body;
-    if (!phonenumber || !Array.isArray(phonenumber)) {
-        return res.status(400).json({ message: 'Valid phone numbers are required' });
+    const { phone, message } = req.body;
+
+    // Validate the phone number
+    if (!phone || typeof phone !== 'string' || phone.trim().length === 0) {
+        return res.status(400).json({ message: 'A valid phone number is required' });
+    }
+
+    // Validate the message
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({ message: 'A valid message is required' });
     }
 
     try {
-        await sendMessage(phonenumber, message);
-        res.json({ message: 'Broadcast sent successfully' });
+        await sendMessage(phone, message); // Call your message sending function
+        res.json({ message: 'Message sent successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('Error sending message:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
 
 const chatWhatsApp = (client) => {
     client.on('message', async (message) => {
@@ -461,7 +501,7 @@ const chatWhatsApp = (client) => {
             }
         }
 
-        else if (query.chatProgress.service == 'Customer Service' && query.chatProgress.status == '1'){
+        else if (query.chatProgress?.service == 'Customer Service' && query.chatProgress?.status == '1'){
             if ((message.body).toLowerCase().includes('selesai')){
                 // const query = await getProgressChat('6285275530651@c.us');  
                 await updateProgressChat(message.from, 'Ending', false);
@@ -474,6 +514,7 @@ const chatWhatsApp = (client) => {
         }
 
         else if(!query.chatProgress || query.chatProgress.status == 0){
+            console.log("masuk sini")
             if ((message.body).toLowerCase().includes('halo boba')){
                 const sendWelcomeMessage = async () => {
                     let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan: ';
@@ -570,6 +611,7 @@ const chatWhatsApp = (client) => {
                             questions.forEach((item, index) => {
                                 kalimatAwal += `\n${index + 1}. ${item.name}`; // Assuming `item.name` holds the category name
                             });
+                            kalimatAwal += '\n#. Untuk berbicara dengan Customer Service';
                 
                             await client.sendMessage(message.from, kalimatAwal);
                         }
@@ -591,6 +633,7 @@ const chatWhatsApp = (client) => {
                     pertanyaan.forEach((item, index) => {
                         kalimatAwal += `\n${index + 1}. ${item.name}`;
                     });
+                    kalimatAwal += '\n#. Untuk berbicara dengan Customer Service';
 
                     await updateProgressChat(message.from, 'Begin', true);
                     await client.sendMessage(message.from, kalimatAwal);
@@ -656,6 +699,7 @@ const chatWhatsApp = (client) => {
                         pertanyaanLagi.forEach((item, index) => {
                             kalimatAwal += `\n${index + 1}. ${item.name}`;
                         });
+                        kalimatAwal += '\n#. Untuk berbicara dengan Customer Service';
                         
                         await client.sendMessage(message.from, 'Silahkan pilih salah satu layanan yang anda inginkan: ');
                         await client.sendMessage(message.from, kalimatAwal);

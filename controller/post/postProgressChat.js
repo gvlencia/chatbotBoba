@@ -9,7 +9,7 @@ async function postProgressChat(nomorhp, service, status, res) {
 
       const response = await axios.post(url, 
         { 
-            phone: `${nomorhp}`, 
+            phone: nomorhp, 
             service: `${service}`, 
             status: status 
         },
@@ -20,9 +20,9 @@ async function postProgressChat(nomorhp, service, status, res) {
           },
       });
 
-      console.log('Progress Chat saved successfully:', response.data);
-      if (!res.headersSent) {
-          res.status(200).json(response.data); // Respond with success data
+    //   console.log('Progress Chat saved successfully:', response.data);
+    if (res && !res.headersSent) {
+        return res.status(200).json(response.data);
       }
   } catch (error) {
       console.error('Error saving Progress Chat:', error.message);
