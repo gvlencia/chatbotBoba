@@ -287,20 +287,22 @@ app.post('/login', async (req, res) => {
 
 // Broadcast message
 app.post('/broadcast', async (req, res) => {
-    const { phonenumbers } = req.body.phones;
-    const { message } = req.body.message
-    if (!phonenumbers || !Array.isArray(phonenumbers)) {
+    const { phones, message } = req.body; // Correct destructuring
+    if (!phones || !Array.isArray(phones) || phones.length === 0) {
         return res.status(400).json({ message: 'Valid phone numbers are required' });
     }
-
+    if (!message || typeof message !== 'string') {
+        return res.status(400).json({ message: 'Valid message is required' });
+    }
     try {
-        await WhatsappBroadcast(phonenumbers, message);
+        await WhatsappBroadcast(phones, message); // Pass `phones` and `message`
         res.json({ message: 'Broadcast sent successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
 
 // Sign out
 app.post('/signout', async (req, res) => {
@@ -357,15 +359,20 @@ app.post('/signout', async (req, res) => {
 //     })
 // })
 
+const delay = 5000;
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
 const WhatsappBroadcast = async (phonenumbers, message) => {
     for (let i = 0; i < phonenumbers.length; i++) {
-        const number = phonenumbers[i];
-        const sanitized_number = number.value.toString().replace(/[- )(]/g, "");
+        const number = phonenumbers[i]; // Directly get the number as a string
+        const sanitized_number = number.toString().replace(/[- )(]/g, "");
         const final_number = `628${sanitized_number.substring(sanitized_number.length - 10)}`;
 
         try {
             const number_details = await client.getNumberId(final_number);
-            
+
             // Skip if number_details is null or undefined
             if (!number_details) {
                 console.warn(`Skipping: No WhatsApp account found for ${final_number}`);
@@ -381,6 +388,7 @@ const WhatsappBroadcast = async (phonenumbers, message) => {
         await sleep(delay);
     }
 };
+
 
 
 const sendMessage = async (phonenumber, message) => {
@@ -425,7 +433,47 @@ const chatWhatsApp = (client) => {
         console.log('Data Progress WA yang masuk:', query.chatProgress);
         
         //when user firsttime using chatbot
-        if(!query.chatProgress || query.chatProgress.status == 0){
+        if (message.from == '6281294517197@c.us') {
+            if ((message.body).toLowerCase().includes('hubungkan')){
+                const query = await getProgressChat('6285275530651@c.us');  
+                await client.sendMessage(message.from, 'Anda telah terhubung dengan pelanggan');
+                await client.sendMessage(query.chatProgress.phone, 'Saat ini anda telah terhubung dengan Customer Service Sekar Wulan.\nJika ingin mengakhiri percakapan, silahkan balas dengan Selesai');
+
+                
+            } else if ((message.body).toLowerCase().includes('tidak')){
+                const query = await getProgressChat('6285275530651@c.us');  
+                await updateProgressChat(query.chatProgress.phone, 'Begin', true);
+
+                await client.sendMessage(message.from, 'Anda telah menolak untuk terhubung dengan pelanggan');
+                await client.sendMessage(query.chatProgress.phone, 'Maaf saat ini Customer Service sedang sibuk, silahkan pilih layanan yang anda inginkan kembali');
+
+            } else if ((message.body).toLowerCase().includes('selesai')){
+                const query = await getProgressChat('6285275530651@c.us');  
+                await updateProgressChat(query.chatProgress.phone, 'Ending', false);
+
+                await client.sendMessage(query.chatProgress.phone, 'Terima kasih telah menggunakan layanan Customer Service Borong Bareng');
+                await client.sendMessage(message.from, 'Anda telah menyelesaikan percakapan dengan pelanggan');
+
+            } else {
+                const query = await getProgressChat('6285275530651@c.us');  
+
+                await client.sendMessage(query.chatProgress.phone, message.body);
+            }
+        }
+
+        else if (query.chatProgress.service == 'Customer Service' && query.chatProgress.status == '1'){
+            if ((message.body).toLowerCase().includes('selesai')){
+                // const query = await getProgressChat('6285275530651@c.us');  
+                await updateProgressChat(message.from, 'Ending', false);
+
+                await client.sendMessage(message.from, 'Terima kasih telah menggunakan layanan Customer Service Borong Bareng');
+                await client.sendMessage('6281294517197@c.us', 'Anda telah menyelesaikan percakapan dengan pelanggan');
+            } else {
+                await client.sendMessage('6281294517197@c.us', message.body);
+            }
+        }
+
+        else if(!query.chatProgress || query.chatProgress.status == 0){
             if ((message.body).toLowerCase().includes('halo boba')){
                 const sendWelcomeMessage = async () => {
                     let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan: ';
@@ -435,6 +483,7 @@ const chatWhatsApp = (client) => {
                             console.log(item.name)
                             kalimatAwal += `\n${index + 1}. ${item.name}`;
                         });
+                        kalimatAwal += '\n#. Untuk berbicara dengan Customer Service';
                         
                         await client.sendMessage(message.from, 'Halo, Selamat Datang di Call Center Borong Bareng');
                         await client.sendMessage(message.from, kalimatAwal);
@@ -510,14 +559,21 @@ const chatWhatsApp = (client) => {
                     });
             
                     if (!shouldReply) {
-                        await client.sendMessage(message.from, 'Mohon maaf kami tidak memahami respon anda.');
+                        if (message.body === '#') {
+                            await updateProgressChat(message.from, 'Customer Service', true);
+                            await client.sendMessage(message.from, 'Mohon ditunggu sebentar, saya akan menghubungkan anda dengan Customer Service.');
+                            await client.sendMessage('6281294517197@c.us', `Ada pelanggan yang ingin berbicara dengan Customer Service. \nNomor HP:  ${message.from}\nBalas dengan 'Hubungkan' jika ingin terhubung dengan pelanggan`);
+                        } else {
+                            await client.sendMessage(message.from, 'Mohon maaf kami tidak memahami respon anda.');
             
-                        let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan:';
-                        questions.forEach((item, index) => {
-                            kalimatAwal += `\n${index + 1}. ${item.name}`; // Assuming `item.name` holds the category name
-                        });
-            
-                        await client.sendMessage(message.from, kalimatAwal);
+                            let kalimatAwal = 'Silahkan pilih salah satu layanan yang anda inginkan:';
+                            questions.forEach((item, index) => {
+                                kalimatAwal += `\n${index + 1}. ${item.name}`; // Assuming `item.name` holds the category name
+                            });
+                
+                            await client.sendMessage(message.from, kalimatAwal);
+                        }
+                        
                     }
                 } catch (error) {
                     console.error('Error fetching questions or sending messages:', error);
@@ -588,6 +644,8 @@ const chatWhatsApp = (client) => {
                 }
             }
         }
+        
+        
         else if (query.chatProgress.service == "Ending" && query.chatProgress.status == true){
             if ((message.body).toLowerCase().includes('ya')){
                 const sendWelcomeMessage = async () => {
